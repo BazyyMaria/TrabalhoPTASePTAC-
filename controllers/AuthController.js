@@ -1,13 +1,13 @@
 const prisma = require("../prisma/prismaClient");
-require('dotenv').config();
-
+require("dotenv").config();
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-class AuthController{
+class AuthController {
+
     static async cadastro(req, res){
         const {nome, email, password, tipo} = req.body;
-        console.log(req.body)
+
         if(!nome || nome.length < 6){
             return res.status(422).json({
                 erro: true,
@@ -52,7 +52,7 @@ class AuthController{
                     tipo: tipo,
                 },
             });
-            console.log(usuario)
+
         return res.status(201).json({
         erro: false,
         mensagem: "Usuário cadastrado com sucesso!",
@@ -65,77 +65,77 @@ class AuthController{
         }
 
     }
-    static async login(req, res){
-        const {email, password} = req.body;
+  static async login(req, res) {
+    const { email, password } = req.body;
 
-        const usuario = await prisma.usuario.findUnique({
-            where: {
-                email: email,
-            },
-        });
+    const usuario = await prisma.usuario.findUnique({
+      where: {
+        email: email,
+      },
+    });
 
-        if(!usuario){
-            return res.status(422).json({
-                erro: true,
-                mensagem: "Usuário não encontrado.",
-            });
-        }
-
-        //Verificação da senha
-        const senhaCorreta = bcryptjs.compareSync(password, usuario.password);
-
-        if(!senhaCorreta){
-            return res.status(422).json({
-                erro: true,
-                mensagem: "Senha incorreta.",
-            })
-        };
-
-        const token = jwt.sign({id: usuario.id}, process.env.SECRET_KEY, {
-            expiresIn: "1h"
-        });
-
-        res.status(200).json({
-            erro: false,
-            mensagem: "Atenticação realizada com sucesso!",
-            token: token,
-            
-        })
-    }
-    
-    static async verificaAutenticacao(req, res, next){
-        const authHeader = req.headers["authorization"];
-
-        const token = authHeader && authHeader.split(" ")[1];
-
-        if (!token) {
-            return res.status(422).json({message: "Token não encontrado."});
-        }
-
-        jwt.verify(token, process.env.SECRET_KEY, (err, payload)=>{
-            if (err){
-                return res.status(401).json({msg: "Token inválido!"})
-            }
-
-            req.usuarioId = payload.id;
-            next();
-        })
+    if (!usuario) {
+      return res.status(422).json({
+        erro: true,
+        mensagem: "Usuário não encontrado.",
+      });
     }
 
-    static async verificaPermissaoAdm (req, res, next){
-        const usuario = await prisma.usuario.findUnique({
-            where : { id: req.usuarioId },
-        });
+    // Verificação da senha
+    const senhaCorreta = bcryptjs.compareSync(password, usuario.password);
 
-        if(usuario.tipo === "adm"){
-            next()
-        }else{
-            return res.status(401).json({
-                erro: true,
-                mensagem: "Você não tem permição para acessar esse recurso!"
-            })
-        }
+    if (!senhaCorreta) {
+      return res.status(422).json({
+        erro: true,
+        mensagem: "Senha incorreta.",
+      });
     }
+
+    // Gerar token com tipo do usuário
+    const token = jwt.sign(
+      { id: usuario.id, tipo: usuario.tipo }, // Inclui tipo no token
+      process.env.SECRET_KEY,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    res.status(200).json({
+      erro: false,
+      mensagem: "Autenticação realizada com sucesso!",
+      token: token,
+    });
+  }
+
+  static async verificaAutenticacao(req, res, next) {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(422).json({ message: "Token não encontrado." });
+    }
+
+    jwt.verify(token, process.env.SECRET_KEY, (err, payload) => {
+      if (err) {
+        return res.status(401).json({ msg: "Token inválido!" });
+      }
+
+      req.usuarioId = payload.id;
+      req.usuarioTipo = payload.tipo; // Salva o tipo do usuário na requisição
+      next();
+    });
+  }
+
+  static async verificaPermissaoAdm(req, res, next) {
+    if (req.usuarioTipo === "adm") {
+      next();
+    } else {
+      return res.status(401).json({
+        erro: true,
+        mensagem: "Você não tem permissão para acessar esse recurso!",
+      });
+    }
+  }
 }
 
 module.exports = AuthController;
