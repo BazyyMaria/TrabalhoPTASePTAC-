@@ -1,17 +1,19 @@
 const prisma = require("../prisma/prismaClient");
 
 class MesaController {
+    //Função para cadastro de mesa
     static async novaMesa(req, res) {
+        //Pega o código e numero de lugares
         const { codigo, n_lugares } = req.body;
 
-        
+        //Confere se o código da mesa contem 3 caracteres
         if (!codigo || codigo.length < 3) {
             return res.status(422).json({
                 erro: true,
                 mensagem: "O código da mesa deve ter pelo menos 3 caracteres.",
             });
         }
-
+        //Confere se o numero de lugares é maior que 0
         if (!n_lugares || isNaN(n_lugares) || n_lugares <= 0) {
             return res.status(422).json({
                 erro: true,
@@ -19,7 +21,7 @@ class MesaController {
             });
         }
 
-        
+        //Verifica se existe uma mesa com o mesmo código
         const existeMesa = await prisma.mesa.count({
             where: {
                 codigo: codigo,
@@ -32,7 +34,7 @@ class MesaController {
                 mensagem: "Já existe uma mesa cadastrada com este código.",
             });
         }
-
+        //Agora ele tenta cadastrar a mesa
         try {
             const novaMesa = await prisma.mesa.create({
                 data: {
@@ -54,6 +56,7 @@ class MesaController {
             });
         }
     }
+    //Função para buscar mesas
     static async buscarMesas(req, res) {
         try {
             const mesas = await prisma.mesa.findMany();
@@ -70,6 +73,7 @@ class MesaController {
             });
         }
     }
+    //Função para buscar mesas em uma data específica
      static async mesasDisp(req, res) {
         const { data } = req.query;
 

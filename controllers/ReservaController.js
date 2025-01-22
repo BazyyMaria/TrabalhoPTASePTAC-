@@ -1,6 +1,7 @@
 const prisma = require("../prisma/prismaClient");
 
 class ReservaController {
+    //Função para cadastrar uma nova reserva
     static async registrarReserva(req, res) {
         const { mesaId, n_pessoas } = req.body;
         const data = new Date(req.body.data);

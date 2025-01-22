@@ -6,6 +6,7 @@ class ProfileController {
         try {
             const usuario = await prisma.usuario.findUnique({
                 where: {id: req.usuarioId},
+                //Omite a senha do usuário
                 omit: {password: true},
             });
 
@@ -31,6 +32,7 @@ class ProfileController {
 
     // Função para "Atualizar Meu Perfil"
     static async atualizaPerfil(req, res) {
+        //Pega o nome e email novos
         const { nome, email } = req.body;
 
         if (!nome || nome.length < 6) {
@@ -46,7 +48,7 @@ class ProfileController {
                 mensagem: "O email deve ter pelo menos 10 caracteres."
             });
         }
-
+        //Tenta atualizar o perfil
         try {
             const usuarioAtualizado = await prisma.usuario.update({
                 where: {
